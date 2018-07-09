@@ -50,6 +50,9 @@ Metadata:
           - HomeDeleteOnTermination
           - DBMaster
           - StartCollectd
+      - Label:
+          default: Development (Optional)
+        Parameters: [ClusterNodeMaxSpotPrice, UseSpotInstances]
     ParameterLabels:
       AMIOpts:
         default: AMI Options
@@ -69,6 +72,8 @@ Metadata:
         default: Minimum number of cluster nodes
       ClusterNodeInstanceType:
         default: Bitbucket cluster node instance type
+      ClusterNodeMaxSpotPrice:
+        default: Bitbucket cluster node maximum spot price
       CreateESBucket:
         default: Create S3 bucket for Elasticsearch snapshots
       ESBucketName:
@@ -117,6 +122,8 @@ Metadata:
         default: External Subnets
       InternalSubnets:
         default: Internal Subnets
+      UseSpotInstances:
+        default: Use Spot Instances
       VPC:
         default: VPC
 Parameters:
@@ -200,6 +207,11 @@ Parameters:
       - x1.32xlarge
     ConstraintDescription: Must be an EC2 instance type in the C5/C4, I3, M5/M4, R4, X1, or T2 family, 'xlarge' or larger
     Description: "Instance type for the cluster nodes. See https://confluence.atlassian.com/x/GpdKLg for guidance"
+  ClusterNodeMaxSpotPrice:
+    Type: Number
+    Description: (Legacy) Maximum spot price (rarely relevant anymore after spot pricing model change)
+    MinValue: '0.0421'
+    Default: '1.8421'
   CatalinaOpts:
     Description: Java options passed to the JVM that runs Bitbucket.
     Type: String
@@ -399,6 +411,14 @@ Parameters:
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+  UseSpotInstances:
+    AllowedValues:
+      - true
+      - false
+    ConstraintDescription: Must be 'true' or 'false'.
+    Description: Use Amazon EC2 spot instances
+    Default: false
+    Type: String
   VPC:
     Description: Virtual Private Cloud
     Type: "AWS::EC2::VPC::Id"
@@ -458,6 +478,7 @@ Conditions:
     !Or [Condition: RestoreFromRDSSnapshot, Condition: StandbyMode]
   SetDBMasterUserPassword:
     !And [!Not [!Equals [!Ref DBMasterUserPassword, ""]], Condition: NotStandbyMode]
+  UseClusterNodeSpotInstances: !Equals [!Ref UseSpotInstances, true]
 Mappings:
   AWSInstanceType2Arch:
     c4.large:
@@ -835,6 +856,7 @@ Resources:
               - Arch
       InstanceType: !Ref ClusterNodeInstanceType
       SecurityGroups: [!Ref SecurityGroup]
+      SpotPrice: !If [UseClusterNodeSpotInstances, !Ref ClusterNodeMaxSpotPrice, !Ref 'AWS::NoValue']
       UserData:
         Fn::Base64:
           !Join
