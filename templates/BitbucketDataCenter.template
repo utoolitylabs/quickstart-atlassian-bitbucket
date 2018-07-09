@@ -52,7 +52,7 @@ Metadata:
           - StartCollectd
       - Label:
           default: Development (Optional)
-        Parameters: [ClusterNodeMaxSpotPrice, UseSpotInstances]
+        Parameters: [ClusterNodeMaxSpotPrice, StackStandbyMode, UseSpotInstances]
     ParameterLabels:
       AMIOpts:
         default: AMI Options
@@ -116,6 +116,8 @@ Metadata:
         default: Key Name
       SSLCertificateName:
         default: SSL Certificate Name
+      StackStandbyMode:
+        default: Stack standby mode
       StartCollectd:
         default: Start the collectd service
       ExternalSubnets:
@@ -123,7 +125,7 @@ Metadata:
       InternalSubnets:
         default: Internal Subnets
       UseSpotInstances:
-        default: Use Spot Instances
+        default: Use spot instances
       VPC:
         default: VPC
 Parameters:
@@ -411,6 +413,14 @@ Parameters:
     Description: Subnets (two or more) where your cluster nodes and other internal infrastructure will be deployed. MUST be within the selected VPC. Specify the ExternalSubnets again here if you wish to deploy the whole stack into the same subnets.
     Type: List<AWS::EC2::Subnet::Id>
     ConstraintDescription: Must be a list of two or more Subnet ID's within the selected VPC.
+  StackStandbyMode:
+    AllowedValues:
+      - cold
+      - active
+    ConstraintDescription: Must be 'cold' or 'active'.
+    Description: Disable/Enable applicable stack resources for cost saving purposes
+    Default: active
+    Type: String
   UseSpotInstances:
     AllowedValues:
       - true
@@ -426,6 +436,8 @@ Parameters:
 Conditions:
   DBProvisionedIops:
     !Equals [!Ref DBStorageType, Provisioned IOPS]
+  DisableClusterNodes:
+    !Equals [!Ref StackStandbyMode, cold]
   SetupCollectd:
     !Equals [!Ref StartCollectd, true]
   RestoreFromEBSSnapshot:
@@ -700,10 +712,10 @@ Resources:
         Count: "1"
         Timeout: PT30M  
     Properties:
-      DesiredCapacity: !If [StandbyMode, 0, !Ref ClusterNodeMin]
+      DesiredCapacity: !If [DisableClusterNodes, 0, !If [StandbyMode, 0, !Ref ClusterNodeMin]]
       LaunchConfigurationName: !Ref ClusterNodeLaunchConfig
-      MaxSize: !Ref ClusterNodeMax
-      MinSize: !If [StandbyMode, 0, !Ref ClusterNodeMin]
+      MaxSize: !If [DisableClusterNodes, 0, !Ref ClusterNodeMax]
+      MinSize: !If [DisableClusterNodes, 0, !If [StandbyMode, 0, !Ref ClusterNodeMin]]
       LoadBalancerNames: [!Ref LoadBalancer]
       VPCZoneIdentifier: !Ref InternalSubnets
       Tags:
