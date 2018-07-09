@@ -35,7 +35,8 @@ Metadata:
           - AssociatePublicIpAddress
           - CidrBlock
           - KeyName
-          - SSLCertificateName
+          - CustomDnsName
+          - SSLCertificateARN
       - Label:
           default: Advanced (Optional)
         Parameters:
@@ -64,6 +65,8 @@ Metadata:
         default: Version
       CatalinaOpts:
         default: Catalina options
+      CustomDnsName:
+        default: Existing DNS name
       CidrBlock:
         default: Permitted IP range
       ClusterNodeMax:
@@ -114,8 +117,8 @@ Metadata:
         default: Home volume snapshot ID to restore
       KeyName:
         default: Key Name
-      SSLCertificateName:
-        default: SSL Certificate Name
+      SSLCertificateARN:
+        default: SSL Certificate ARN
       StackStandbyMode:
         default: Stack standby mode
       StartCollectd:
@@ -224,6 +227,10 @@ Parameters:
     Default: false
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
+  CustomDnsName:
+    Description: "Use custom existing DNS name for your Data Center instance. Please note: you must own the domain and configure it to point at the load balancer."
+    Type: String
+    Default: ''
   ESBucketName:
     Type: String
     Default: ""
@@ -394,11 +401,11 @@ Parameters:
     Description: The EC2 Key Pair to allow SSH access to the instances
     Type: "AWS::EC2::KeyPair::KeyName"
     ConstraintDescription: Must be the name of an existing EC2 Key Pair.
-  SSLCertificateName:
-    Description: The name of your Server Certificate to use for HTTPS. Refer to Amazon documentation for managing your server certificates. Leave blank if you don't want to set up HTTPS at this time
+  SSLCertificateARN:
+    Description: The ARN of your Server Certificate to use for HTTPS. Refer to Amazon documentation for managing your server certificates. Leave blank if you don't want to set up HTTPS at this time
     Type: String
     MinLength: 0
-    MaxLength: 32
+    MaxLength: 128
     Default: ""
   StartCollectd:
     Type: String
@@ -459,7 +466,7 @@ Conditions:
   StandbyMode:
     !Not [!Equals [!Ref DBMaster, ""]]
   SetupSSL:
-    !Not [!Equals [!Ref SSLCertificateName, ""]]
+    !Not [!Equals [!Ref SSLCertificateARN, ""]]
   NotStandbyMode:
     !Equals [!Ref DBMaster, ""]
   IsFileServerInstanceEbsOptimized:
@@ -490,6 +497,8 @@ Conditions:
     !Or [Condition: RestoreFromRDSSnapshot, Condition: StandbyMode]
   SetDBMasterUserPassword:
     !And [!Not [!Equals [!Ref DBMasterUserPassword, ""]], Condition: NotStandbyMode]
+  UseCustomDnsName:
+    !Not [!Equals [!Ref CustomDnsName, '']]
   UseClusterNodeSpotInstances: !Equals [!Ref UseSpotInstances, true]
 Mappings:
   AWSInstanceType2Arch:
@@ -774,7 +783,7 @@ Resources:
                     - ATL_BITBUCKET_BUNDLED_ELASTICSEARCH_ENABLED=false
                     - ATL_NGINX_ENABLED=false
                     - ATL_POSTGRES_ENABLED=false
-                    - !Sub ["ATL_PROXY_NAME=${LoadBalancerDNSName}", LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName]
+                    - !Sub ["ATL_PROXY_NAME=${LoadBalancerDNSName}", LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]]
                     - ATL_SSL_SELF_CERT_ENABLED=false
                     - !If [SetupSSL, "ATL_SSL_PROXY=true", !Ref "AWS::NoValue"]
                     - !Join ["\n", !Ref AMIOpts]
@@ -1018,7 +1027,7 @@ Resources:
                     - !Sub
                       - "BITBUCKET_URL=${HTTP}://${LoadBalancerDNSName}"
                       - HTTP: !If [SetupSSL, "https", "http"]
-                        LoadBalancerDNSName: !GetAtt LoadBalancer.DNSName
+                        LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]
                     - BITBUCKET_HOME=/media/atl/bitbucket
                     - BITBUCKET_UID=atlbitbucket
                     - BITBUCKET_GID=atlbitbucket
@@ -1209,10 +1218,7 @@ Resources:
               InstanceProtocol: HTTP
               PolicyNames:
                 - SessionStickiness
-              SSLCertificateId: !Sub
-                - "arn:aws:iam::${AccountId}:server-certificate/${SSLCertificateName}"
-                - AccountId: !Ref "AWS::AccountId"
-                  SSLCertificateName: !Ref SSLCertificateName
+              SSLCertificateId: !Ref SSLCertificateARN
             - !Ref AWS::NoValue
         - LoadBalancerPort: 7999
           Protocol: TCP
@@ -1258,14 +1264,20 @@ Resources:
       ToPort: "-1"
       SourceSecurityGroupId: !Ref SecurityGroup
 Outputs:
+  BitbucketURL:
+    Description: The URL to access this Bitbucket service
+    Value: !Sub
+      - "${HTTP}://${LoadBalancerDNSName}"
+      - HTTP: !If [SetupSSL, "https", "http"]
+        LoadBalancerDNSName: !If [UseCustomDnsName, !Ref CustomDnsName, !GetAtt LoadBalancer.DNSName]
   ClusterNodeGroup:
     Description: The name of the auto scaling group of cluster nodes
     Value: !Ref ClusterNodeGroup
   FileServer:
     Description: The public DNS name of the FileServer node
     Value: !GetAtt FileServer.PublicDnsName
-  URL:
-    Description: The URL of the Bitbucket Data Center instance
+  LoadBalancerURL:
+    Description: The Load Balancer URL
     Value: !Sub
       - "${HTTP}://${LoadBalancerDNSName}"
       - HTTP: !If [SetupSSL, "https", "http"]

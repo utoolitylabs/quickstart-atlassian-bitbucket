@@ -15,7 +15,8 @@
                     "PublicSubnet1CIDR",
                     "PublicSubnet2CIDR",
                     "AccessCIDR",
-                    "SSLCertificateName"
+                    "CustomDnsName",
+                    "SSLCertificateArn"
                 ]
             }, {
             "Label": {
@@ -155,6 +156,9 @@
                 "CreateESBucket": {
                     "default": "Create S3 bucket for Elasticsearch snapshots"
                 },
+                "CustomDnsName": {
+                    "default": "Existing DNS name"
+                },
                 "ESBucketName": {
                     "default": "Elasticsearch snapshot S3 bucket name"
                 },
@@ -230,8 +234,8 @@
                 "HomeVolumeType": {
                     "default": "Home volume type"
                 },
-                "SSLCertificateName": {
-                    "default": "SSL Certificate Name"
+                "SSLCertificateArn": {
+                    "default": "SSL Certificate ARN"
                 },
                 "StackStandbyMode": {
                     "default": "Stack standby mode"
@@ -309,6 +313,11 @@
                 "false"
             ],
             "ConstraintDescription": "Must be 'true' or 'false'."
+        },
+        "CustomDnsName": {
+            "Description": "Use custom existing DNS name for your Data Center instance. Please note: you must own the domain and configure it to point at the load balancer.",
+            "Type": "String",
+            "Default": ""
         },
         "ESBucketName": {
             "Type": "String",
@@ -631,11 +640,11 @@
             ],
             "ConstraintDescription": "Must be 'true' or 'false'"
         },
-        "SSLCertificateName": {
-            "Description": "The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
+        "SSLCertificateArn": {
+            "Description": "The ARN of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
             "Type": "String",
             "MinLength": "0",
-            "MaxLength": "32",
+            "MaxLength": "128",
             "Default": ""
         },
         "StackStandbyMode": {
@@ -843,6 +852,9 @@
                     "CatalinaOpts": {
                         "Ref": "CatalinaOpts"
                     },
+                    "CustomDnsName": {
+                        "Ref": "CustomDnsName"
+                    },
                     "StartCollectd": {
                         "Ref": "StartCollectd"
                     },
@@ -894,8 +906,8 @@
                     "ElasticsearchInstanceType": {
                         "Ref": "ElasticsearchInstanceType"
                     },
-                    "SSLCertificateName": {
-                        "Ref": "SSLCertificateName"
+                    "SSLCertificateArn": {
+                        "Ref": "SSLCertificateArn"
                     },
                     "KeyName": {
                         "Ref": "KeyName"
@@ -987,11 +999,20 @@
     },
     "Outputs": {
         "BitbucketURL": {
-            "Description": "The URL of the Bitbucket deployment",
+            "Description": "The URL to access this Bitbucket service",
             "Value": {
                 "Fn::GetAtt": [
                     "BitbucketDCStack",
-                    "Outputs.URL"
+                    "Outputs.BitbucketURL"
+                ]
+            }
+        },
+        "LoadBalancerURL": {
+            "Description": "The Load Balancer URL",
+            "Value": {
+                "Fn::GetAtt": [
+                    "BitbucketDCStack",
+                    "Outputs.LoadBalancerURL"
                 ]
             }
         }
