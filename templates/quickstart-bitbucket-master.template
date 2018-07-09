@@ -15,6 +15,7 @@
                     "PublicSubnet1CIDR",
                     "PublicSubnet2CIDR",
                     "AccessCIDR",
+                    "CustomDnsName",
                     "SSLCertificateArn"
                 ]
             }, {
@@ -154,6 +155,9 @@
                 },
                 "CreateESBucket": {
                     "default": "Create S3 bucket for Elasticsearch snapshots"
+                },
+                "CustomDnsName": {
+                    "default": "Existing DNS name"
                 },
                 "ESBucketName": {
                     "default": "Elasticsearch snapshot S3 bucket name"
@@ -309,6 +313,11 @@
                 "false"
             ],
             "ConstraintDescription": "Must be 'true' or 'false'."
+        },
+        "CustomDnsName": {
+            "Description": "Use custom existing DNS name for your Data Center instance. Please note: you must own the domain and configure it to point at the load balancer.",
+            "Type": "String",
+            "Default": ""
         },
         "ESBucketName": {
             "Type": "String",
@@ -843,6 +852,9 @@
                     "CatalinaOpts": {
                         "Ref": "CatalinaOpts"
                     },
+                    "CustomDnsName": {
+                        "Ref": "CustomDnsName"
+                    },
                     "StartCollectd": {
                         "Ref": "StartCollectd"
                     },
@@ -987,11 +999,20 @@
     },
     "Outputs": {
         "BitbucketURL": {
-            "Description": "The URL of the Bitbucket deployment",
+            "Description": "The URL to access this Bitbucket service",
             "Value": {
                 "Fn::GetAtt": [
                     "BitbucketDCStack",
-                    "Outputs.URL"
+                    "Outputs.BitbucketURL"
+                ]
+            }
+        },
+        "LoadBalancerURL": {
+            "Description": "The Load Balancer URL",
+            "Value": {
+                "Fn::GetAtt": [
+                    "BitbucketDCStack",
+                    "Outputs.LoadBalancerURL"
                 ]
             }
         }
