@@ -100,6 +100,7 @@
                 "default": "Development Configuration"
             },
             "Parameters": [
+                "StackStandbyMode",
                 "UseSpotInstances"
             ]
             }, {
@@ -232,8 +233,11 @@
                 "SSLCertificateName": {
                     "default": "SSL Certificate Name"
                 },
+                "StackStandbyMode": {
+                    "default": "Stack standby mode"
+                },
                 "UseSpotInstances": {
-                    "default": "Use Spot Instances"
+                    "default": "Use spot instances"
                 }
             }
         }
@@ -634,6 +638,16 @@
             "MaxLength": "32",
             "Default": ""
         },
+        "StackStandbyMode": {
+            "Description": "Disable/Enable applicable stack resources for cost saving purposes",
+            "Type": "String",
+            "Default": "active",
+            "AllowedValues": [
+                "cold",
+                "active"
+            ],
+            "ConstraintDescription": "Must be 'cold' or 'active'."
+        },
         "UseSpotInstances": {
             "Description": "Use Amazon EC2 spot instances",
             "Type": "String",
@@ -897,6 +911,9 @@
                     },
                     "AMIOpts": {
                         "Ref": "AMIOpts"
+                    },
+                    "StackStandbyMode": {
+                        "Ref": "StackStandbyMode"
                     },
                     "UseSpotInstances": {
                         "Ref": "UseSpotInstances"
