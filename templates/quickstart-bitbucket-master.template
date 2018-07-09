@@ -97,6 +97,13 @@
             ]
             }, {
             "Label": {
+                "default": "Development Configuration"
+            },
+            "Parameters": [
+                "UseSpotInstances"
+            ]
+            }, {
+            "Label": {
                 "default": "AWS Quick Start Configuration"
             },
             "Parameters": [
@@ -224,6 +231,9 @@
                 },
                 "SSLCertificateName": {
                     "default": "SSL Certificate Name"
+                },
+                "UseSpotInstances": {
+                    "default": "Use Spot Instances"
                 }
             }
         }
@@ -623,6 +633,16 @@
             "MinLength": "0",
             "MaxLength": "32",
             "Default": ""
+        },
+        "UseSpotInstances": {
+            "Description": "Use Amazon EC2 spot instances",
+            "Type": "String",
+            "Default": "false",
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "ConstraintDescription": "Must be 'true' or 'false'."
         }
     },
     "Mappings": {
@@ -877,6 +897,9 @@
                     },
                     "AMIOpts": {
                         "Ref": "AMIOpts"
+                    },
+                    "UseSpotInstances": {
+                        "Ref": "UseSpotInstances"
                     }
                 }
             }
