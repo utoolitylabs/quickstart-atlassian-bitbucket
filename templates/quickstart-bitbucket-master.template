@@ -15,7 +15,7 @@
                     "PublicSubnet1CIDR",
                     "PublicSubnet2CIDR",
                     "AccessCIDR",
-                    "SSLCertificateName"
+                    "SSLCertificateArn"
                 ]
             }, {
             "Label": {
@@ -230,8 +230,8 @@
                 "HomeVolumeType": {
                     "default": "Home volume type"
                 },
-                "SSLCertificateName": {
-                    "default": "SSL Certificate Name"
+                "SSLCertificateArn": {
+                    "default": "SSL Certificate ARN"
                 },
                 "StackStandbyMode": {
                     "default": "Stack standby mode"
@@ -631,11 +631,11 @@
             ],
             "ConstraintDescription": "Must be 'true' or 'false'"
         },
-        "SSLCertificateName": {
-            "Description": "The name of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
+        "SSLCertificateArn": {
+            "Description": "The ARN of your Server Certificate to use for HTTPS.  Leave blank if you don't want to set up HTTPS at this time",
             "Type": "String",
             "MinLength": "0",
-            "MaxLength": "32",
+            "MaxLength": "128",
             "Default": ""
         },
         "StackStandbyMode": {
@@ -894,8 +894,8 @@
                     "ElasticsearchInstanceType": {
                         "Ref": "ElasticsearchInstanceType"
                     },
-                    "SSLCertificateName": {
-                        "Ref": "SSLCertificateName"
+                    "SSLCertificateArn": {
+                        "Ref": "SSLCertificateArn"
                     },
                     "KeyName": {
                         "Ref": "KeyName"
