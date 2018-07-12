@@ -34,6 +34,7 @@ Metadata:
           - InternalSubnets
           - AssociatePublicIpAddress
           - CidrBlock
+          - BastionSecurityGroupID
           - KeyName
           - CustomDnsName
           - SSLCertificateARN
@@ -59,6 +60,8 @@ Metadata:
         default: AMI Options
       AssociatePublicIpAddress:
         default: Assign public IP
+      BastionSecurityGroupID:
+        default: Bastion Security Group ID
       BitbucketProperties:
         default: Bitbucket properties
       BitbucketVersion:
@@ -142,6 +145,12 @@ Parameters:
     Default: true
     AllowedValues: [true, false]
     ConstraintDescription: Must be 'true' or 'false'.
+  BastionSecurityGroupID:
+    AllowedPattern: "(sg-([0-9a-f]{1,})){0,1}"
+    ConstraintDescription: Must be the ID of an EC2 security group, or empty to skip.
+    Description: (Optional) Bastion Security Group ID.
+    Type: String
+    Default: ''
   BitbucketProperties:
     Description: A comma-separated list of bitbucket properties in the form key1=value1, key2=value2, ... Find documentation at https://confluence.atlassian.com/x/m5ZKLg
     Type: CommaDelimitedList
@@ -469,6 +478,10 @@ Conditions:
     !Not [!Equals [!Ref SSLCertificateARN, ""]]
   NotStandbyMode:
     !Equals [!Ref DBMaster, ""]
+  GrantSSHAccessToBastionSecurityGroup:
+    !Not [!Equals [!Ref BastionSecurityGroupID, ""]]
+  GrantSSHAccessToCidrBlock:
+    !Equals [!Ref BastionSecurityGroupID, ""]
   IsFileServerInstanceEbsOptimized:
     !Not [!Equals ["t2", !Select [0, !Split [".", !Ref FileServerInstanceType]]]]
   IsHomeProvisionedIops:
@@ -1239,10 +1252,20 @@ Resources:
       GroupDescription: Security group allowing SSH and HTTP/HTTPS access
       VpcId: !Ref VPC
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: !Ref CidrBlock
+        - !If
+          - GrantSSHAccessToCidrBlock
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: !Ref CidrBlock
+          - !Ref "AWS::NoValue"
+        - !If
+          - GrantSSHAccessToBastionSecurityGroup
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            SourceSecurityGroupId: !Ref BastionSecurityGroupID
+          - !Ref "AWS::NoValue"
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
