@@ -25,7 +25,7 @@ Metadata:
           - DBMultiAZ
       - Label:
           default: Elasticsearch
-        Parameters: [ElasticsearchInstanceType]
+        Parameters: [ElasticsearchInstanceType, ElasticsearchSize, ElasticsearchVolumeType, ElasticsearchIops]
       - Label:
           default: Networking
         Parameters:
@@ -106,6 +106,12 @@ Metadata:
         default: Database snapshot ID to restore
       ElasticsearchInstanceType:
         default: Elasticsearch instance type
+      ElasticsearchIops:
+        default: Elasticsearch directory IOPS
+      ElasticsearchSize:
+        default: Elasticsearch directory size
+      ElasticsearchVolumeType:
+        default: Elasticsearch directory volume type
       FileServerInstanceType:
         default: File server instance type
       HomeDeleteOnTermination:
@@ -328,19 +334,64 @@ Parameters:
     ConstraintDescription: Must be in the range 1000 - 30000.
   ElasticsearchInstanceType:
     Type: String
-    Default: m3.xlarge.elasticsearch
+    Default: m4.xlarge.elasticsearch
     AllowedValues:
+      - c4.large.elasticsearch
+      - c4.xlarge.elasticsearch
+      - c4.2xlarge.elasticsearch
+      - c4.4xlarge.elasticsearch
+      - c4.8xlarge.elasticsearch
+      - m4.large.elasticsearch
+      - m4.xlarge.elasticsearch
+      - m4.2xlarge.elasticsearch
+      - m4.4xlarge.elasticsearch
+      - m4.10xlarge.elasticsearch
+      - m3.medium.elasticsearch
       - m3.large.elasticsearch
       - m3.xlarge.elasticsearch
       - m3.2xlarge.elasticsearch
+      - r4.large.elasticsearch
+      - r4.xlarge.elasticsearch
+      - r4.2xlarge.elasticsearch
+      - r4.4xlarge.elasticsearch
+      - r4.8xlarge.elasticsearch
+      - r4.16xlarge.elasticsearch
       - r3.large.elasticsearch
       - r3.xlarge.elasticsearch
       - r3.2xlarge.elasticsearch
       - r3.4xlarge.elasticsearch
       - r3.8xlarge.elasticsearch
+      - i3.large.elasticsearch
+      - i3.xlarge.elasticsearch
+      - i3.2xlarge.elasticsearch
+      - i3.4xlarge.elasticsearch
+      - i3.8xlarge.elasticsearch
+      - i3.16xlarge.elasticsearch
       - i2.xlarge.elasticsearch
       - i2.2xlarge.elasticsearch
-    ConstraintDescription: Must be an Elasticsearch instance type in the M3, R3 or I2 family
+      - t2.small.elasticsearch
+      - t2.medium.elasticsearch
+    ConstraintDescription: Must be an Elasticsearch instance type in the M3/M4, R3/R4, I2/I3 or T2 family
+  ElasticsearchIops:
+    Description: "Elasticsearch directory IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB"
+    Type: Number
+    Default: 1000
+    MinValue: 100
+    MaxValue: 20000
+    ConstraintDescription: Must be in the range 100 - 20000.
+  ElasticsearchSize:
+    Description: "Elasticsearch storage size, in gibibytes (GiB) (10 - 16384, only used with EBS instance types: C4/M4/R4/T2)"
+    Type: Number
+    Default: 32
+    MinValue: 10
+    MaxValue: 16384
+    ConstraintDescription: Must be in the range 10 - 16384.
+  ElasticsearchVolumeType:
+    Description: "Elasticsearch volume type, only used with EBS instance types: C4/M4/R4/T2)"
+    Type: String
+    Default: General Purpose (SSD)
+    AllowedValues: [General Purpose (SSD), Provisioned IOPS]
+    ConstraintDescription: Must be 'General Purpose (SSD)' or 'Provisioned IOPS'.
   FileServerInstanceType:
     Description: "Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance"
     Type: String
@@ -483,8 +534,15 @@ Conditions:
   GrantSSHAccessToCidrRange: !And
     - !Not [!Equals [!Select [0, !Split ["/", !Ref BastionAccess]], "127.0.0.1"]]
     - !Not [!Condition GrantSSHAccessToBastionSecurityGroup]
+  IsElasticsearchEbsOnly: !And
+    - !Not [!Equals ["i2", !Select [0, !Split [".", !Ref ElasticsearchInstanceType]]]]
+    - !Not [!Equals ["i3", !Select [0, !Split [".", !Ref ElasticsearchInstanceType]]]]
+    - !Not [!Equals ["m3", !Select [0, !Split [".", !Ref ElasticsearchInstanceType]]]]
+    - !Not [!Equals ["r3", !Select [0, !Split [".", !Ref ElasticsearchInstanceType]]]]
   IsFileServerInstanceEbsOptimized:
     !Not [!Equals ["t2", !Select [0, !Split [".", !Ref FileServerInstanceType]]]]
+  IsElasticsearchProvisionedIops:
+    !Equals [!Ref ElasticsearchVolumeType, Provisioned IOPS]
   IsHomeProvisionedIops:
     !Equals [!Ref HomeVolumeType, Provisioned IOPS]
   IsVersion4X:
@@ -950,6 +1008,11 @@ Resources:
   Elasticsearch:
     Type: "AWS::Elasticsearch::Domain"
     Properties:
+      EBSOptions:
+        EBSEnabled: !If [IsElasticsearchEbsOnly, true, false]
+        VolumeIops: !If [IsElasticsearchProvisionedIops, !Ref ElasticsearchIops, !Ref "AWS::NoValue"]
+        VolumeSize: !If [IsElasticsearchEbsOnly, !Ref ElasticsearchSize, !Ref "AWS::NoValue"]
+        VolumeType: !If [IsElasticsearchEbsOnly, !If [IsElasticsearchProvisionedIops, io1, gp2], !Ref "AWS::NoValue"]
       ElasticsearchVersion: !If [ShouldUseES23, "2.3", "5.5"]
       ElasticsearchClusterConfig:
         InstanceType: !Ref ElasticsearchInstanceType
