@@ -69,7 +69,10 @@
                 "default": "Elasticsearch"
             },
             "Parameters": [
-                "ElasticsearchInstanceType"
+                "ElasticsearchInstanceType",
+                "ElasticsearchSize",
+                "ElasticsearchVolumeType",
+                "ElasticsearchIops"
             ]
             }, {
             "Label": {
@@ -209,6 +212,15 @@
                 },
                 "ElasticsearchInstanceType": {
                     "default": "Elasticsearch instance type"
+                },
+                "ElasticsearchIops": {
+                    "default": "Elasticsearch directory IOPS"
+                },
+                "ElasticsearchSize": {
+                    "default": "Home directory size"
+                },
+                "ElasticsearchVolumeType": {
+                    "default": "Elasticsearch directory volume type"
                 },
                 "BastionAMIOS": {
                     "default": "Bastion AMI Operating System"
@@ -539,18 +551,69 @@
             "Type": "String",
             "Default": "m3.xlarge.elasticsearch",
             "AllowedValues": [
+                "c4.large.elasticsearch",
+                "c4.xlarge.elasticsearch",
+                "c4.2xlarge.elasticsearch",
+                "c4.4xlarge.elasticsearch",
+                "c4.8xlarge.elasticsearch",
+                "m4.large.elasticsearch",
+                "m4.xlarge.elasticsearch",
+                "m4.2xlarge.elasticsearch",
+                "m4.4xlarge.elasticsearch",
+                "m4.10xlarge.elasticsearch",
+                "m3.medium.elasticsearch",
                 "m3.large.elasticsearch",
                 "m3.xlarge.elasticsearch",
                 "m3.2xlarge.elasticsearch",
+                "r4.large.elasticsearch",
+                "r4.xlarge.elasticsearch",
+                "r4.2xlarge.elasticsearch",
+                "r4.4xlarge.elasticsearch",
+                "r4.8xlarge.elasticsearch",
+                "r4.16xlarge.elasticsearch",
                 "r3.large.elasticsearch",
                 "r3.xlarge.elasticsearch",
                 "r3.2xlarge.elasticsearch",
                 "r3.4xlarge.elasticsearch",
                 "r3.8xlarge.elasticsearch",
+                "i3.large.elasticsearch",
+                "i3.xlarge.elasticsearch",
+                "i3.2xlarge.elasticsearch",
+                "i3.4xlarge.elasticsearch",
+                "i3.8xlarge.elasticsearch",
+                "i3.16xlarge.elasticsearch",
                 "i2.xlarge.elasticsearch",
-                "i2.2xlarge.elasticsearch"
+                "i2.2xlarge.elasticsearch",
+                "t2.small.elasticsearch",
+                "t2.medium.elasticsearch"
             ],
             "ConstraintDescription": "Must be an Elasticsearch instance type in the M3, R3 or I2 family"
+        },
+        "ElasticsearchIops": {
+            "Description": "Elasticsearch directory IOPS (100 - 20000, only used with Provisioned IOPS).  Note: The ratio of IOPS provisioned to the volume size requested can be a maximum of 50; for example, a volume with 5000 IOPS must be at least 100 GiB",
+            "Type": "Number",
+            "Default": "1000",
+            "MinValue": "100",
+            "MaxValue": "20000",
+            "ConstraintDescription": "Must be in the range 100 - 20000."
+        },
+        "ElasticsearchSize": {
+            "Description": "Elasticsearch storage size, in gibibytes (GiB) (10 - 16384, only used with EBS instance types: C4/M4/R4/T2)",
+            "Type": "Number",
+            "Default": "100",
+            "MinValue": "100",
+            "MaxValue": "16384",
+            "ConstraintDescription": "Must be in the range 100 - 16384."
+        },
+        "ElasticsearchVolumeType": {
+            "Description": "Elasticsearch volume type, only used with EBS instance types: C4/M4/R4/T2)",
+            "Type": "String",
+            "Default": "Provisioned IOPS",
+            "AllowedValues": [
+                "General Purpose (SSD)",
+                "Provisioned IOPS"
+            ],
+            "ConstraintDescription": "Must be 'General Purpose (SSD)' or 'Provisioned IOPS'."
         },
         "FileServerInstanceType": {
             "Description": "Instance type for the file server hosting the Bitbucket shared home directory. See https://confluence.atlassian.com/x/GpdKLg for guidance",
@@ -905,6 +968,15 @@
                     },
                     "ElasticsearchInstanceType": {
                         "Ref": "ElasticsearchInstanceType"
+                    },
+                    "ElasticsearchIops": {
+                        "Ref": "ElasticsearchIops"
+                    },
+                    "ElasticsearchSize": {
+                        "Ref": "ElasticsearchSize"
+                    },
+                    "ElasticsearchVolumeType": {
+                        "Ref": "ElasticsearchVolumeType"
                     },
                     "SSLCertificateArn": {
                         "Ref": "SSLCertificateArn"
