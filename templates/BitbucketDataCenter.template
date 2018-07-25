@@ -1251,6 +1251,7 @@ Resources:
       DBName: !If [RestoreRDSOrStandby, !Ref "AWS::NoValue",bitbucket]
       AllocatedStorage: !Ref DBStorage
       DBInstanceClass: !Ref DBInstanceClass
+      DBInstanceIdentifier: !Ref AWS::StackName
       DBSnapshotIdentifier: !If [RestoreFromRDSSnapshot, !Ref DBSnapshotId, !Ref "AWS::NoValue"]
       DBSubnetGroupName: !Ref DBSubnetGroup
       Engine: postgres
