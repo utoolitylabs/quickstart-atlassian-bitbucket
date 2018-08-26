@@ -397,11 +397,20 @@
                 "m4.4xlarge",
                 "m4.8xlarge",
                 "m4.16xlarge",
+                "r5.xlarge",
+                "r5.2xlarge",
+                "r5.4xlarge",
+                "r5.12xlarge",
+                "r5.24xlarge",
                 "r4.xlarge",
                 "r4.2xlarge",
                 "r4.4xlarge",
                 "r4.8xlarge",
                 "r4.16xlarge",
+                "t3.medium",
+                "t3.large",
+                "t3.xlarge",
+                "t3.2xlarge",
                 "t2.medium",
                 "t2.large",
                 "t2.xlarge",
@@ -409,7 +418,7 @@
                 "x1.16xlarge",
                 "x1.32xlarge"
             ],
-            "ConstraintDescription": "Must be an EC2 instance type in the C5/C4, I3, M5/M4, R4, X1, or T2 family, 'xlarge' or larger",
+            "ConstraintDescription": "Must be an EC2 instance type in the C5/C4, I3, M5/M4, R5/R4, X1, or T3/T2 family, 'xlarge' or larger",
             "Description": "Instance type for the cluster nodes. See https://confluence.atlassian.com/x/GpdKLg for guidance"
         },
         "CatalinaOpts": {
@@ -526,6 +535,13 @@
         },
         "BastionInstanceType": {
             "AllowedValues": [
+                "t3.nano",
+                "t3.micro",
+                "t3.small",
+                "t3.medium",
+                "t3.large",
+                "t3.xlarge",
+                "t3.2large",
                 "t2.nano",
                 "t2.micro",
                 "t2.small",
@@ -542,7 +558,7 @@
                 "m4.2xlarge",
                 "m4.4xlarge"
             ],
-            "Default": "t2.micro",
+            "Default": "t3.micro",
             "Description": "Amazon EC2 instance type for the bastion instances",
             "Type": "String"
         },
@@ -643,6 +659,10 @@
                 "m4.4xlarge",
                 "m4.8xlarge",
                 "m4.16xlarge",
+                "t3.medium",
+                "t3.large",
+                "t3.xlarge",
+                "t3.2xlarge",
                 "t2.medium",
                 "t2.large",
                 "t2.xlarge",
@@ -650,7 +670,7 @@
                 "x1.16xlarge",
                 "x1.32xlarge"
             ],
-            "ConstraintDescription": "Must be an EC2 instance type in the C5/C4, M5/M4, X1, or T2 family, 'xlarge' or larger."
+            "ConstraintDescription": "Must be an EC2 instance type in the C5/C4, M5/M4, X1, or T3/T2 family, 'xlarge' or larger."
         },
         "HomeDeleteOnTermination": {
             "Description": "Delete Bitbucket home directory volume when the file server instance is terminated.  You must back up your data before terminating your file server instance if this option is set to 'true'",
